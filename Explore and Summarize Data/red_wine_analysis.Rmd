@@ -1,0 +1,1357 @@
+Red Wine Quality EDA
+========================================================
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+
+
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(GGally)
+library(RColorBrewer)
+library(psych)
+
+```
+
+```{r Load_the_Data}
+# Load the Data
+red_df <- read.csv("wineQualityReds.csv")
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+## Exploring the data columns, shape, columns types and summaries
+
+head(red_df, 3)
+
+
+
+cat('\nData Dimensions: ', dim(red_df),
+    '\n\nColumns Names:\n', names(red_df),
+    '\n\nChecking for any missing values: ', any(is.na(red_df)))
+
+```
+
+
+```{r}
+
+# Dropping the x column as it's just for indexing and unnecessary in analysis
+# and there is automatic indexing in r 
+
+red_df = red_df[, c(2: length(red_df))]
+head(red_df, 3)
+
+```
+
+
+
+> This data set presents the quality of red wine along with a set of factors
+that contribute to the final quality like alcohol content and acids.
+The dataset consist of 1599 observations over 12 variables with quality as
+ordinal categorical variable. The data contains no missing values and all
+other variables, aside from quality, are numerical
+
+# Univariate Plots Section
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+str(red_df)
+
+```
+
+
+```{r}
+## Converting quality column to an ordered factor
+
+red_df$quality = ordered(red_df$quality)
+
+```
+
+
+> Data Summary
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, Data_Summary}
+
+summary(red_df[,c(1:11)])
+
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, red_df$quality)
+
+```
+
+***
+
+Although the possible values of quality range from 0 to 10, it seems
+that taking the median value from multiple expert rating to the same wine biased
+the quality ratings to be confined to 3, 4, 5, 6, 7, 8 values and giving this 
+distribution shape where most ratings fall to 5, 6, 7 ratings
+
+***
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, red_df$alcohol, binwidth = .1)+
+  geom_vline(xintercept = quantile(red_df$alcohol, .95), color = 'red')+
+  scale_x_continuous(breaks = seq(8, 14, .5))
+
+```
+
+***
+
+The alcohol Dist. is right skewed with peak in the range around 9.5 and
+it seems there are outliers for very high alcohol content wine in the far right
+tail after the .95 quantile vertical line near alcohol = 13 and higher, 
+also the initial small values near 8.4 (minimum value) till and excluding 9 may
+considered outliers, too.
+
+There is a that trend of repeating concentrated count around some values shown by
+the peak spikes-like bins, for example around 9.5, 10, 10.5, 11 and that's maybe 
+due to some bias resulted from the process of making wine. For example,
+The wine makers may favour some alcohol concentrations over others for 
+commercial, economical, even tax driven purposes, so we should return to 
+the wine manifacturers to make sure of this.
+
+***
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, red_df$alcohol, bins = 50)+
+  scale_x_log10(breaks = seq(8, 20, .5))
+
+```
+
+
+*** 
+
+Data still slightly positive skewed due to the modal left peak which now 
+grow even taller as the values of multiple bins in the original histogram
+were mapped through the log10() transformation function to the same bin. 
+The spiky bins trend preserves, but instead of a staircase descending manner, 
+now it's almost uniform, all peaks around 75 counts
+
+***
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot(data = red_df, aes(y = red_df$alcohol))+
+  geom_boxplot()
+
+```
+
+***
+
+The boxplot reaffirms outliers with alcohol more than 13 and point out that 
+bulk of the data lies between 9.5 and 11.2 approximately
+
+***
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, fixed.acidity, binwidth = .1)+
+  geom_vline(xintercept = quantile(red_df$fixed.acidity, .99), 
+             color = 'red', linetype = 4)
+
+```
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot(data = red_df, aes(x = fixed.acidity))+
+  geom_histogram(color = 'black', fill = 'blue', alpha = .5, bins = 50)+
+  scale_x_log10()
+
+```
+
+
+
+
+***
+
+The fixed acidity Dist. is right skewed, but after applying log10
+transformation in the blue histogram, it's now normalized to some extent, 
+which can be useful in later analysis when applying a regression model 
+(logistic)
+
+***
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, volatile.acidity, binwidth = .02)+
+  scale_x_continuous(breaks = seq(.2, 1.6, .1))+
+  geom_vline(xintercept = quantile(red_df$volatile.acidity, .99))
+
+```
+
+***
+
+The Dist. is bimodal where the most volatile acidity concentrations used are
+found to be in the vacinity of .4 and .6 respectively
+
+***
+
+
+ 
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, pH, binwidth = .02)+
+  scale_x_continuous(breaks = seq(2.75, 4, .125))
+
+
+```
+
+***
+
+ph distribution seems normal, pH concentrations more than 3.625 or less than 3
+seem to be rare in red wines, the most concentration lies around 3.375
+
+***
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, citric.acid, binwidth = .01)
+
+```
+
+***
+The concentration of citric.acid is very low and we can observe this in the 
+towering first bin from 0 to .01, there is also moderate to high frequecy 
+of citric.acid among wines for concentrations below .5. Concentration of 1 is 
+an obvious outlier
+
+***
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(red_df$residual.sugar, binwidth = .1)
+
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+
+qplot(data = red_df, residual.sugar, binwidth = .1)+
+  scale_x_continuous(breaks = seq(0, 5, .5))+
+  coord_cartesian(xlim = c(.5, quantile(red_df$residual.sugar, .95)))+
+  geom_vline(xintercept = 1, linetype = 4, color = 'red')
+
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+
+grid.arrange(
+  ggplot(data = red_df, aes(y = residual.sugar))+
+  geom_boxplot(), 
+  ggplot(data = red_df, aes(y = residual.sugar))+
+  geom_boxplot()+
+  coord_cartesian(ylim = c(1, 3.5)),
+  ncol = 2
+)
+```
+
+***
+Affirmed by the boxplot, the bulk of the data is between  1.5 and 3 
+approximately, and the distribution of residual.sugar in this area, is pretty
+normal as appears in the boxplot of seemingly same length second and third
+quartiles and affirmed by the shape of the histogram distribution in this 
+particular area. Sugar content greater than 4, isn't a common practice 
+among red wine makers from our sample
+
+***
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+chlorides_bulk_mean = mean(
+  red_df$chlorides[red_df$chlorides < .14 | red_df$chlorides > .03]
+  )
+
+
+qplot(data = red_df, chlorides, binwidth = .001)+
+  coord_cartesian(xlim = c(.03, .14))+
+  scale_x_continuous(breaks = seq(0, .15, .01))+
+  geom_vline(xintercept = chlorides_bulk_mean, linetype = 4, color = 'red')
+
+cat('\nChlorides outliers pecentage: ', 
+    mean(red_df$chlorides > .14 | red_df$chlorides < .03) * 100,
+    '%'
+)
+
+
+```
+
+
+
+***
+Chlorides concentrates between .03 and .14, concentrations with values outside 
+this region are rare like the one at .01 (not visible in the plot) 
+or those larger than .14, those outside
+this region combined are less shan 5% of the data
+***
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, free.sulfur.dioxide, binwidth = 1)
+
+```
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, total.sulfur.dioxide, binwidth = 5)+
+  geom_vline(xintercept = quantile(red_df$total.sulfur.dioxide, .99),
+             color = 'red', linetype = 4)+
+  xlim(0, 200)
+
+
+```
+
+
+
+***
+Both free.sulful.dioxide and total.sulfur.dioxide are right-skewed, that may
+not come as a surprise as free.sulful.dioxide is supposedly part of the 
+total.sulfur.dioxide where total.sulfur.dioxide covers both the free molecular
+formed SO2 and the bound ones.
+
+***
+
+
+
+> Since both TSO2 and FSO2 are related, we may measure the ratio of the 
+free sulfur dioxide with respect to TSO2, taking the ratio may remove the 
+skewness and be better representative in modeling in multivariate analysis 
+afterwads
+
+```{r warning=FALSE, message=FALSE}
+
+## The vertical line represents water density
+
+red_df$free.sulfur.dioxide.ratio = red_df$free.sulfur.dioxide / red_df$total.sulfur.dioxide
+
+summary(red_df$free.sulfur.dioxide.ratio)
+
+
+qplot(data = red_df, free.sulfur.dioxide.ratio, binwidth = .02)+
+  scale_x_continuous(breaks = seq(0, .8, .1))
+
+```
+
+***
+A maximum of .85714 < 1 of free.sulur.dioxide.ratio and a minimum greater than
+0 verifies logically that there are no seemingly incorrect data in our dataset
+as the free.sulfur.dioxide concentration should always be less than the total
+sulfur dioxide and a cocentration of zero may not be correct because free 
+sulfur dioxide is responsible for killing bacteria
+
+***
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+## The vertical line represents water density
+
+ggplot(data = red_df, aes(x = density))+
+  geom_histogram(binwidth = .0005)+
+  geom_vline(xintercept = .997, color = 'red', linetype = 4)
+
+```
+
+
+***
+
+red wine density is normally distributed around  water density which is about
+.997 as indicaed by the vertical line
+
+***
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, sulphates, binwidth = .02)+
+  geom_vline(xintercept = quantile(red_df$sulphates, .95),
+             linetype = 4, 
+             color = 'red')
+
+
+```
+
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+qplot(data = red_df, sulphates, bins = 50)+
+  scale_x_log10()
+
+
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot(red_df, aes(y = red_df$sulphates))+
+  geom_boxplot()+
+  coord_cartesian(ylim = c(.25, 1))
+
+```
+
+
+***
+
+slightly right skewed with outliers, zooming and log transformaing slightly 
+lessens the skewness as seen above. Sulphates concentrations more than 1
+considered outliers
+
+***
+
+
+
+# Univariate Analysis
+
+
+### What is the structure of your dataset?
+
+The dataset consists of 1599 observations over 12 main features 
+("fixed.acidity", "volatile.acidity", "citric.acid", "residual.sugar", 
+"chlorides", "free.sulfur.dioxide", "total.sulfur.dioxide", "density",
+"pH", "sulphates", "alcohol", "quality"). Only quality is categorical ordered
+factor variables with values from 0 to 10 where 0 is worst and 10 is best,
+other features are numeric.
+
+Other observations:
+    1. Even 0 up to 10 are possible values for quality, only values in the range
+    [3,8] are present in the data and possibly because the single quality entry 
+    in our data set is the median of multiple quality ratings from multiple 
+    experts to the same entry (red wine product), so values like 0 and 10 are 
+    hard to find as it's very hard that all or most of 
+    the experts will rate a wine very high or very low that the median is very 
+    low or very high. Having a quality entry as 3 means that this wine was
+    rated very low by most experts that their median ratings is just 3.
+    2. Most quality ratings for wines are concentrated on 5,6,7.
+    3. Citric acid exist in very low concentration in wines 
+    or may not exist at all as  there are 132 samples with no citric acid.
+    
+
+### What is/are the main feature(s) of interest in your dataset?
+
+Quality of the wine as if the quality is higher, price and selling rates
+are probably higher. 
+
+
+### What other features in the dataset do you think will help support your \
+investigation into your feature(s) of interest?
+
+1. alcohol content seems crucial to wine quality.
+2. free.sulfur.dioxide and total.sulfur.dioxide  are related as the free or part
+of the total sulfur dioxide, also their distributions are similar in the sense
+that both of them are right skewed and they responsible for SO2 concentration 
+which kills unwanted bacteria and microbes and become sensed for levels greater 
+than 50 ppm total, so do that affect the quality of wine or not which we would
+examine in multivaried analysis.
+3. fixed.acidity, volatile.acidity, critic.acid contribute to the ph value of 
+the wine  as they are acids which in turn affect the SO2 levels according the 
+article at https://www.extension.purdue.edu/extmedia/FS/FS-52-W.pdf. 
+So, from the transitive relation that if ph affects SO2, and SO2 affect quality,
+ph affects quality, but we should first make sure the base assumptions hold 
+in our dataset.
+4. The combination residual.sugar together with chlorides may affect the quality
+as combination of differenty concentrations of them may lead to groups of certain
+quality ratings.
+5. The density may or may not affect the quality, but if it affected the quality, 
+it would be in a relation way, but I don't think in a causal way as the density 
+of any liquid is determined by its components, so the components are more probable
+to be the cause. In addition the wines from the density distribution seems to be
+near water density, so it's not probable that some of them are high dense like 
+honey for example 1.45 kg/l, but other measures could be better to be causal than 
+dense like viscosity as some poeple prefer viscous liquids over others and some
+love the contrary.
+
+
+### Did you create any new variables from existing variables in the dataset?
+
+Yes, created free.sulfur.dioxide.ratio to measure the FSO2 concentrations with
+respect to the TSO2 concentrations and also to remove the skewness in the
+their distributions.
+
+### Of the features you investigated, were there any unusual distributions? \
+Did you perform any operations on the data to tidy, adjust, or change the form \
+of the data? If so, why did you do this?
+
+1. The citric.acid dist. is odd, it is not following certain pattern, it seems to 
+be tri-modal with peaks concentrated at certain values like 0 and .24 and .49. 
+2. Performed logarithmic transformation on skewed distributions and all skewed 
+ones in the data are positive-skewed. I did that to normalize the data for later
+use in building relations between those skewed features and the other featuers,
+so we may reach linear relations with reasonable r-squared coefficient.
+
+
+# Bivariate Plots Section
+
+
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+pairs.panels(red_df)
+
+```
+
+
+***
+From the correlations, there is relatively high correlation between quality and
+both of alcohol and volatile.acidity Even though the quality is categorical
+variable and correlation may not be meaningful in this context as the many 
+and diverse values of the quantitave variable maps to just a small set of the 
+categorical variables. Also there is high correlation between pH and citric.acid 
+and fixed.acidity and we can reflect on the correlation between pH and 
+fixed.acidity from the squashed shape of the correlation ellipse, similar shape 
+evident between density and fixed.acidity, also alcohol and density.
+free and total sulfur.dioxide seem highly correlated, too
+
+***
+
+
+
+
+## Alcohol and quality
+
+```{r echo=FALSE,warning=F, message=F}
+
+red_df %>% 
+  group_by(quality) %>%
+  summarise(mean_alcohol = mean(alcohol),
+            median_alcohol = median(alcohol),
+            n = n())
+```
+
+***
+
+At quality 4, the second lowest quality, the median_alcohol is less than the mean,
+then as quality increases we can see that the gap between median and mean
+closes in till the median_alcohol is higher than the mean at quality 7 and 8. 
+So there is probably distribution changes along with those summaries for everyone
+of those quality which we'll furhter investigate
+
+***
+
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, aes(x = quality, y = alcohol))+
+  geom_boxplot()
+
+```
+
+
+
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, aes(x = quality, y = alcohol))+
+  geom_point(position = position_jitter(w = .2, h = .1), 
+             alpha = .25)
+
+```
+
+
+
+
+
+
+***
+
+From the boxplot, we observe that from quality 5 up, it seems that the 
+alcohol content increased in a steady way as quality increases. 
+Comparing qualities 5,6,7, we can see in quality 5, dark regions concentrates on
+low alcohol content. In quality 6, those dark regions seems to like stretched 
+upward to include more alcohol content. In quality 7, it's obvious that the plot
+moves upwards compared to 5, 6, so alcohol obviously has some degree in increasing
+quality, but I may iterate on this observing histograms for each quality
+
+***
+
+
+
+```{r echo=FALSE, message=F, warning=F}
+
+ggplot(data = red_df, aes(x = alcohol))+
+  geom_histogram(bins = 30)+
+  facet_wrap( ~ quality, scales = 'free')
+
+
+subset(red_df, select = c('alcohol', 'quality')) %>% 
+  group_by(quality)  %>%
+  summarise(quality_n = n())
+
+```
+
+
+***
+
+Examining the distributions of alcohol for each quality, we can see the tendency
+of low alcohol content in low quality wines as evident by the left towering 
+peak of the right skewed distribution of quality 5 where most alcohol levels
+are below 10%. Then, there is a left peak also for quality '6' below 10% but 
+its relative height with respect to its Distribution is low compared to the 
+peak at quality 5 with respect to quality 5 Dist .
+We can see this pattern of Deminishing skewness and translation of the peak of 
+the distribution from left to right gradualy from quality 5 to 6.
+Finally, at quality 7, we see that the peak now around the center of the data, 
+Almost no skewness in the distributions, but I should also point out the 
+relatively low number of quality 7 ratings compared to 5 and 6, but
+199 observations is sufficient for this small dataset of 1599 obs. In addition,
+it's not easy to get a median of high quality 7 tested by various 
+experts
+
+I don't put much concentration on quality  3, 4 and 8 distributions as the number
+of observations is very small to interpret the data, but for quality 3, 4 the 
+distributions concentrate at relatively low alcohol content areas [8.5, 11], 
+[9, 13] with bulk of data between [9, 11.5] while quality 8 covers range from 
+[10, 14] with concentration with the bulk of the data between [11, 13]
+
+***
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+## Trying to normalize the or l
+
+qplot(data = subset(red_df, red_df$alcohol < quantile(red_df$alcohol, .99)), 
+       alcohol, binwidth = .1, fill = quality)
+
+```
+
+***
+
+after color coding alchohol by quality, The distribution summarizes the insights
+that most of high quality wines have medium to high alcohol content. 
+As we see the dark blueish low quality regions deminish by increasing 
+the alcohol content while the yellow and greenish high quality regions become
+dominant at the same time.
+
+***
+
+
+
+
+## sulfur.dioxides
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, 
+       aes(x = total.sulfur.dioxide, y = free.sulfur.dioxide))+
+  geom_jitter(alpha = .5, color = 'blue')+
+  xlim(0, quantile(red_df$total.sulfur.dioxide, .99))+
+  ylim(0, quantile(red_df$free.sulfur.dioxide, .99))+
+  geom_smooth(color = 'red', method = 'loess')+
+  geom_abline(intercept = 0, slope = 45/50)+
+  geom_abline(intercept = -2, slope = .07)
+  
+
+cat(
+  'FSO2 & TSO2 correlation: ', 
+    cor(red_df$total.sulfur.dioxide, red_df$free.sulfur.dioxide)
+)
+
+```
+
+***
+
+For low concentrations of total.sulfur.dioxide below 50 and free.sulur.dioxide
+below 20, it seems their relations is almost linear, but we can see this relation
+no longer holds for higher concentration and the both of their points scatter 
+almost non-uniformly in a way bounded by the cone shape depicted by the black 
+boundary lines drawn in the plot
+
+***
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, aes(x = quality, y = free.sulfur.dioxide))+
+  geom_boxplot()
+
+```
+
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, aes(x = quality, y = free.sulfur.dioxide))+
+  geom_point(position = position_jitter(w = .2, h = 0), alpha =  .25)+
+  scale_y_continuous(breaks = seq(0, 70, 10))
+
+```
+
+
+
+
+***
+
+From quality 5 and higher, free.sulfur.dioxide concentrations decreases on 
+average. We can notice that for quality 8, the highest free.sulfur concentration
+is around 40 below 50 as even though sulfur.dioxide is good for killing bacteria, 
+its existence at high concentration becomes evident in the nose and taste of 
+wine, but with a negative effect as shown by the boxplot. 
+
+We can also notice the similarity between quality 3 and 8 FSO2 boxplots. 
+Taking in consideration  both of the data counts is low (10 obs for quality 3,
+18 obs for quality 8), there is might be another factor affecting the quality of 
+wine behind the scenes. The problem about their low counts is that with any 
+additional obs added to either 3, 8, their data summaries (mean, median) and 
+shape may change drastically and that's probably the reason why we can't 
+generalize from very small obs except with more sophisticated statistical 
+procedures.
+
+Observing the free.sulfur.dioxide scatter plot, it seems that there are certain
+concentratons favorable in the industry .e.g. the 5, 10, 15 mg/dm^3 concentrations
+for quality '5' and the 5, 15 mg/dm^3 for quality '6' and the 5, 10 mg/dm^3 for 
+quality 7
+
+***
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, aes(x = quality, y = free.sulfur.dioxide.ratio))+
+  geom_boxplot()+
+  scale_y_continuous(breaks = seq(0, .8, .1))
+
+```
+
+
+
+***
+
+The ratio boxplots seem complex to intepret as low qualities 3, 4 seem to have
+high FSO2 ratios, quality seems to improve as ratio increases for qualities
+5, 6, 7 and then quality 8 drops this pattern.
+
+***
+
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+red_df$FSO2_ratio_cut = cut(red_df$free.sulfur.dioxide.ratio, breaks = seq(0, 1, .1), include.lowest = TRUE)
+
+ggplot(data = red_df, aes(x = quality, y = FSO2_ratio_cut))+
+  geom_point(position = position_jitter(w = .3, h = .1), alpha =  .1)
+
+```
+
+
+***
+
+Observing the ratio cut, it's clear now that there is certain ratios buckets 
+favorable over others for each quality. For example quality 5 common FSO2 ratios
+are between .1 and .5 while quality 6 between .2 and .6.  For quality 7, between
+.3 and .6
+
+***
+
+
+
+## Acids Explorations
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+cat(
+  ' Any 0 concentration of fixed.acidity: ', any(red_df$fixed.acidity == 0),
+  '\n',
+  'Is there a citry.acid concentration higher than fixed.acidity: ', 
+  any(red_df$citric.acid > red_df$fixed.acidity)
+)
+
+```
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, aes(x = fixed.acidity, y = citric.acid))+
+  geom_point(alpha = .2, color = 'blue')+
+  geom_smooth(color = 'red', method = 'lm')+
+  xlim(4.5, quantile(red_df$fixed.acidity, .99))+
+  ylim(0, quantile(red_df$citric.acid, .99))
+
+```
+
+***
+
+According to article at the site [Whats in Wine? Fixed Acidity](https://waterhouse.ucdavis.edu/whats-in-wine/fixed-acidity)
+citric acid is part of the fixed.acidity and it may be true regarding our dataset,
+but not necessarily as there is no way to verify this assumption as there is 
+no fixed.acidity with 0 concentration that we may test the corresponding values 
+of citric acids and expect them to be zero, too giving us a better indication 
+that citric acids are part of the fixed.acidity. Even though all concentrations of
+fixed acidity is less than their corresponding citric.acid, we can't say for 
+sure that citric.acid is part of the fixed.acidity in this dataset because even if 
+fixed.acidity doesn't include citric.acid, fixed.acidity captures multiple other
+acids which combined may most probably has higher concentration than citric.acid
+alone.
+Thus, the one providing the dataset may or may not included citric acids as part of fixed.acidity, but what we can observe is the strong relationship between the 
+citric acids and fixed.acidity, but we can't say it's causal for sure as we shall 
+return to the dataset provider and make sure of the assumptions of the variables
+and on what occasion some acids are added artificially or whether they're 
+produced naturally.
+
+
+***
+
+```{r warning=F, message=F}
+red_df$total_acidity = red_df$fixed.acidity + red_df$volatile.acidity + red_df$citric.acid
+
+
+qplot(red_df$total_acidity, geom = 'density')
+
+```
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, aes(x = total_acidity, y = pH))+
+  geom_point(alpha = .5, color = 'blue')+
+  geom_smooth(color = 'red', method = 'lm')
+
+cor(red_df[, 
+           c('fixed.acidity', 'volatile.acidity', 'citric.acid', 'total_acidity')
+           ],
+    red_df$pH 
+  )
+
+```
+
+
+***
+Fixed.acidity, citric acids contributes greatly to the pH level in the wine, the volatile.acidity as acetic acids contribute the least with a positive correlation 
+coef of 0.23 aligning with categorization of aceticacids in chemistry as weak 
+acids so that may relatively increase the pH value and we can see that the 
+correlation absolute value of pH slighty increased withtotal.acidity -0.6834838 
+over only fixed.acidity -0.6829782 and the negative sign means that that they 
+lower the pH value (increasing acidity)
+
+***
+
+```{r echo=FALSE,warning=F, message=F}
+
+p1 = ggplot(data = red_df, 
+       aes(x = quality, y = citric.acid))+
+  geom_boxplot()
+
+p2 = ggplot(data = red_df, 
+       aes(x = quality, y = volatile.acidity))+
+  geom_boxplot()
+
+p3 = ggplot(data = red_df, 
+       aes(x = quality, y = fixed.acidity))+
+  geom_boxplot()
+
+p4 = ggplot(data = red_df, 
+       aes(x = quality, y = pH))+
+  geom_boxplot()+
+  scale_y_continuous(breaks = seq(2.75, 4, .25))
+
+  
+grid.arrange(p1, p2, p3, p4)
+```
+
+
+
+***
+Observing the bulk of the data concentrated in the boxes in the boxplots:
+
+1. For citric acids, High quality wines tend to have higher content of citric acid
+compared to lower quality.
+
+2. For volatile.acidity, quality increases with lower concentrations of 
+volatile acids. So, volatile acids may be undesirable in red wines.
+
+3. For fixed.acidity, quality and fixd.acidity from the box plots seems to be 
+unclear, fixed.acidity median may very slightly increase as quality increases 
+from 4 to 7, but such increase isn't significiant.
+
+4. Summarizing all acids contributions in general, the pH effect seems neuteral
+on qualities 5 to 8, but we can notice that higher quality tend to be less than
+3.5 and higher than than 3.125
+
+
+***
+
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df,
+       aes(x = quality, y = density))+
+  geom_boxplot()+
+  coord_cartesian(ylim = c(.9925, 1))+
+  geom_hline(yintercept = .997, linetype = 4, color = 'red')+
+  stat_summary(fun.y=mean, colour= I('#4076BC'), 
+               geom="point", shape= I('*'), 
+               size= 7,show.legend = FALSE)
+
+```
+
+
+***
+Density median tend to decrease as quality incerases evident from qualities
+of 5 upward and compared to water density(the red horizontal line)
+we can say that the median or mean density of wines tend to be around water 
+density or less.
+
+***
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, aes(x = alcohol, y = density))+
+  geom_jitter( alpha = .25)+
+  geom_smooth(method = 'loess')+
+  scale_x_continuous(breaks = seq(0, 15, 1))
+
+cat('Alcohol $ Wine Density correlation: ', cor(red_df$density, red_df$alcohol))
+
+```
+
+***
+
+As Alcohol concentration increases, the density of wine decreases and that
+evident by the -.5 correlatoin coefficient. That doesn't come as a 
+surprise as ethanol (alcohol) density is about 0.789 g/cm³, so having more
+alcohol content would attract higher density solution down to .789, but since
+wine doesn't contain only alcohol, there are other factors affecting density
+That's probably why the points like the one at density .995 g/cm^3 above the blue 
+fit line at 14% alcohol concentration, so the other factors combined seem to increase
+the wine density in contrast to alcohol
+
+***
+
+
+```{r echo=FALSE,warning=F, message=F}
+
+ggplot(data = red_df, aes(fixed.acidity, density))+
+  geom_jitter(alpha = .25)+
+  geom_smooth(method = 'loess')
+
+
+```
+
+
+
+
+
+
+***
+
+As fixed.acidity increases the density increases and by the previous box plot, 
+when the density increases, it's likely that the quality may decrease. but
+fixed.acidity also lowers ph of the wine which and we know that pH of wines 
+concentrate between 3.25 and 3.5. So, it seems fixed.acidity is a critical feature 
+very likely a causal one in affecting wine and wine characteristics, so there should be caution on controlling the fixed.acidity levels.
+
+***
+
+
+```{r echo=FALSE,warning=F, message=F}
+ggplot(data = red_df, 
+       aes(x = quality, y = sulphates))+
+  geom_boxplot()+
+  stat_summary(fun.y=mean, colour="darkred", geom="point", 
+               shape=18, size=3,show_guide = FALSE)+
+  coord_cartesian(ylim = c(.4, 1))
+```
+
+***
+
+quality increases on average with sulpahtes content, for data of quality 4, 
+it seems that the mean is pushed up due to some value outliers. For quality 7, 
+the mean is nearly superimposed on the median
+
+***
+
+
+
+# Bivariate Analysis
+
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. How did the feature(s) of interest vary with other features in \
+the dataset?
+
+
+* The alcohol content affects the quality substantially, as for the most stable
+data of quality 5, 6, 7, the alcohol content median and average increases as 
+the quality increases.
+
+* As essential as free.sulfur.dioxide is, high concentrations become evident in
+nose and taste, but this seems to negatively affect the quality through the 
+analysis of quality and free.sulfur.dioxide.
+
+* High Quality wines pH levels are around  3.25.
+
+
+
+### Did you observe any interesting relationships between the other features \
+(not the main feature(s) of interest)?
+
+* Free and total sulfur dioxide, with a correlation coefficient of .67, total
+sulfur dioxide may give a  good indication of the concentration of free.sulfur
+dioxide.
+
+* Fixed acidity plays a crucial role in determining wine density, pH value
+where both in turn affect wine quality.
+
+* Alcohol decreases wine density.
+
+
+### What was the strongest relationship you found?
+
+With -0.6829782 correlation coefficient, pH and fixed.acidity is the strongest 
+relation and it's also a causal relation as acids chemically lowers the pH 
+value.
+
+
+
+
+# Multivariate Plots Section
+
+
+
+
+```{r echo=FALSE, warning=F, message=F}
+
+ggplot(data = red_df,
+       aes(x = alcohol, y = citric.acid,
+           group = quality, color = quality)
+)+
+  geom_point(position = position_jitter(w = .5, h =.05))+
+  xlim(min(red_df$alcohol), quantile(red_df$alcohol, 0.99))+
+  ylim(min(red_df$citric.acid), quantile(red_df$citric.acid, 0.99))+
+  scale_color_brewer(palette = "Blues")+
+  theme_dark()+
+  geom_vline(xintercept = 11, color = 'orange',  alpha = .5)+
+  geom_hline(yintercept = .3, color = 'orange',  alpha = .5)
+
+```
+
+
+***
+
+
+White and Light blue (low qulaity) wines concentrated on the low alcohol, low
+citric acide region quadrant. As either alcohol content increases or citric.acid
+increases, quality improves manifested by the dark blueish point regions to reach
+highest quality regions in the top far right high alcohol, high citric.acid
+quadrant
+
+
+***
+
+```{r echo=FALSE, warning=F, message=F}
+ggplot(data = red_df,
+       aes(x = log10(fixed.acidity), y = alcohol,
+           group = quality, color = quality)
+)+
+  geom_jitter()+
+  scale_color_brewer(palette = "Blues")+
+  theme_dark()+
+  scale_y_continuous(breaks = seq(8, 15, 1))
+
+```
+
+
+***
+
+For low alcohol contenet, quality tend to be low or low-to-medium irrespective
+of fixed.acidity. 
+There are horizontal alcohol stripes (.e.g. the strip immediately below 9.5 % 
+alcohol, one at 10) which shows some alcohol concentration are more favorable 
+than others.
+
+***
+
+```{r echo=FALSE, warning=F, message=F}
+# subset(red_df, red_df$quality %in% c(5,6,7)
+ggplot(data = red_df,
+       aes(x = pH, y = alcohol,
+           group = quality, color = quality)
+)+
+  geom_jitter()+
+  # geom_point(position = position_jitter(w = .5, h =.05))+
+  scale_color_brewer(palette = "Blues")+
+  theme_dark()
+
+```
+
+
+***
+
+Observing the dark(high quality) and light(low quality)regions, light regions 
+initiates at low level of alcohol and from the right bottom corner of the graph 
+there is a trend where regions gets darker (higher quality) as we move diagonally
+from the bottom right corner (high pH, low alcohol) to the 
+top left corner (low pH 'higher acidity', high alcohol)
+
+***
+
+```{r echo=FALSE, warning=F, message=F}
+ggplot(data = red_df,
+       aes(x = free.sulfur.dioxide, y = alcohol,
+           group = quality, color = quality)
+)+
+  geom_jitter(position = position_jitter(w = 1, h = .5))+
+  scale_color_brewer(palette = "Blues")+
+  xlim(min(red_df$free.sulfur.dioxide) - 1, 
+       quantile(red_df$free.sulfur.dioxide, .95))+
+  ylim(min(red_df$alcohol) , 
+       quantile(red_df$alcohol, .95))+
+  theme_dark()
+
+```
+
+
+```{r echo=FALSE, warning=F, message=F}
+ggplot(data = red_df,
+       aes(x = free.sulfur.dioxide.ratio, y = alcohol,
+           group = quality, color = quality)
+)+
+  geom_jitter()+
+  scale_color_brewer(palette = "Blues")+
+  theme_dark()
+
+```
+
+
+
+***
+
+There are obvious bias in free.sulfur.dioxide.ratio and alcohol values manifested
+by the horizontal and vertical stripes like at FSO2.ratio of .5 or 10.5% alcohol.
+
+For every FSO2.ratio vertical stripe, wine quality increases as alcohol increases
+while for every horizontal alcohol stripe, quality seems to be invariant to 
+FSO2.ratio.
+
+***
+
+
+
+
+
+***
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+
+citric.acid and alcohol go hand in hand with strenghting wine quality demonstrated
+by the scatter plot high quality regions in the top right quadrant. 
+
+pH and alcohol strenghen the quality in non-uniform way rather in diagnoally 
+fashion from low alcohol, high pH to high alcohol, low pH and I stress diagnoally
+as there is high pH, low alcohol and low pH, low alcohol high quality regions
+
+### Were there any interesting or surprising interactions between features?
+
+FSO2 ratio and alcohol as FSO2 ratio seems to be invariant to quality, the only 
+one playing role in quality is alcohol irrespective of FSO2 ratio, so high FSO2 
+concentration with enough alcohol may not denegrade the quality
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the \
+strengths and limitations of your model.
+No
+
+------
+
+# Final Plots and Summary
+
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+
+qplot(data = red_df, red_df$quality,
+      xlab = '\nWine Quality',
+      ylab = 'Count\n',
+      fill = I('#78ADD2'),
+      col = I('grey'))+
+  ggtitle("\nDistribution of Red Wine Quality\n")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+
+### Description One
+
+The histogram shows the distribution of the wine quality in the red wine dataset
+with the quality rating in the x-axis and the count of the ratings at the y-axis.
+
+Understanding the quailty distribution is crucial as:
+* Quality is main feature of interest in the data-set.
+* Although quality has possible values from 0 to 10. Our dataset quality rates
+are limited to only 3 to 8 with most of the concentrations limited to 5-7 and 
+that happened possible due to reasons:
+1. When returning to the data set provided, it appears that quality is median of 
+at least 3 evaluations made by wine experts, and since every observation is a median,
+that may explain the high concentrations in mid-quality ratings 5,6
+2. The data set is relatively small of only 1599 observations.
+
+
+
+### Plot Two
+```{r echo=FALSE, message=F, warning=F, Plot_Two}
+
+ggplot(data = red_df, 
+       aes(x = total.sulfur.dioxide, y = free.sulfur.dioxide))+
+  geom_jitter(color = I('#1F77B4'), alpha = .5)+
+  xlim(0, quantile(red_df$total.sulfur.dioxide, .99))+
+  ylim(0, quantile(red_df$free.sulfur.dioxide, .99))+
+  geom_smooth(color = 'orange', method = 'loess')+
+  geom_abline(intercept = 0, slope = 45/50)+
+  geom_abline(intercept = -2, slope = .07)+
+  labs(x = '\nTotal Sulfur Dioxide (mg / dm^3)',
+       y = 'Free Sulfur Dioxide (mg / dm^3)\n', 
+       title = "\nFree and Total Sulfur Dioxide Relation")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+### Description Two
+
+The scatter plot shows the relation between Total Sulfur Dioxide TSO2 (mg / dm^3)
+on the x-axis and the Free Sulfur Dioxide FSO2 (mg / dm^3) on the y-axis and an orange
+fit line to the relation.
+
+
+For low concentrations of total.sulfur.dioxide below 50 and free.sulur.dioxide
+below 20, it seems their relations is almost linear, but we can see this relation
+no longer holds for higher concentration and the both of their points scatter 
+almost non-uniformly in a way bounded by the cone shape depicted by the black 
+boundary lines drawn in the plot, but as the fit orange line shows for those high
+values of Total Sulfur dioxide, the free sulfur dioxide reaches some form of 
+saturations as it doesn't increase much while total Sulfur dioxide increases.
+
+Researching the topic, it appears that manifactures supply wines with free sulfur
+dioxide to kill bacteria, but some of the FSO2 bind with other components, becoming
+bound sulfur dioxide which contributes to the total sulfur dioxide, but under bound
+SO2 not free SO2 and that explains the saturation at the end of the graph as 
+manufacturers probably want specific concentration of FSO2 and in some wines,
+more FSO2 atoms bind with other wine components, necessitating adding more 
+FSO2, leaving TSO2 levels high
+
+
+
+### Plot Three
+```{r echo=FALSE, message=F, warning=F, Plot_Three}
+ggplot(data = red_df,
+       aes(x = alcohol, y = citric.acid,
+           group = quality, color = quality)
+)+
+  geom_point(position = position_jitter(w = .5, h =.05))+
+  xlim(min(red_df$alcohol), quantile(red_df$alcohol, 0.99))+
+  ylim(min(red_df$citric.acid), quantile(red_df$citric.acid, 0.99))+
+  scale_color_brewer(palette = "Blues")+
+  theme_dark()+
+  geom_vline(xintercept = 11, color = 'orange',  alpha = .5)+
+  geom_hline(yintercept = .3, color = 'orange',  alpha = .5)+
+  labs(x = '\nAlcohol Content ( % )', y = 'Citric Acid (g / dm^3)\n', 
+       colour = "Quality",
+       title = "\nQuality by Alcohol Percentage and Citric Acid Concentration\n")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+### Description Three
+
+A scatter plot between alcohol percentage and citric acid concentration (g/ dm^3)
+in the red wine samples, color coded by quality.
+
+
+From the plot citric.acid and alcohol go hand in hand with strenghting ed wine quality
+as white, Light blue regions (low qulaity wines) concentrated on the low alcohol,
+low citric acid region quadrant. As either alcohol content increases or citric.acid
+increases, quality improves manifested by the dark blueish regions to reach
+highest density regions of high quality in the top far right high alcohol, 
+high citric.acid quadrant
+
+------
+
+# Reflection
+
+
+* The odd distribution of red wine quality as data represents median values, so 
+some quality ratings like 5, 6 are dominant in terms of count. Median values makes
+the analysis harder because it biases the distribution of quality. I would rather
+prefer one of two options:
+    * Supplying every single quality rating along with the expert id, in this case
+    we may consider different summaries to quality, and will probably find out 
+    what affects every expert rating. In addition, according the data set provider
+    every observation quality is median of at least 3 experts, so every observation
+    probably wans't rated according to the same experts or the same number of 
+    experts
+    * Supplying more observations, the insufficiency of observations provides 
+    insufficiency of ratings two as evident for quality 3, 4, and 8, very few 
+    observations fall into those qualitites.
+* Red wines pH values concentrates between 3.125 and 3.5 with most at 3.375, pH
+values are important because they are one major cause for red wine 'red' color.
+* Free sulfur dioxide and total sulfur dioxide related concentrations, and the 
+saturation of free sulfur dioxide levels at some values around 20-30 mg/dm^3
+* Although FSO2 concentrattion and ratio may be evident at nose and smell, for 
+not very high concentration around 30 mg/dm^3, supplying the right amount of 
+alcohol to the red wine surprisingly covers the FSO2 effect. That alone shows 
+the importance of alcohol in wines. Actually wines are about alcohol.
+* For future analysis, I suggest searching the effect of sulpahtes and FSO2. Also,
+the residual.sugar most concentrations are less than 4 g/dm^3 and the max residual 
+sugar concentration is less than 16 g/dm^3, so there is no observations to test
+sweet red wines with residual sugar concentration near 45 g/dm^3
+
+
+
+
+# Citation
+
+This dataset is public available for research. The details are described in [Cortez et al., 2009]. 
+  Please include this citation if you plan to use this database:
+
+  P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. 
+  Modeling wine preferences by data mining from physicochemical properties.
+  In Decision Support Systems, Elsevier, 47(4):547-553. ISSN: 0167-9236.
+
+  Available at: [@Elsevier] http://dx.doi.org/10.1016/j.dss.2009.05.016
+                [Pre-press (pdf)] http://www3.dsi.uminho.pt/pcortez/winequality09.pdf
+                [bib] http://www3.dsi.uminho.pt/pcortez/dss09.bib
+
+
+# Resources
+
+* [Potassium Metabisulfite Additions](https://winemakersacademy.com/potassium-metabisulfite-additions/)
+* [Fixed Acidity](https://waterhouse.ucdavis.edu/whats-in-wine/fixed-acidity])
+* [Total sulfur dioxide. Why it matters](https://www.extension.iastate.edu/wine/total-sulfur-dioxide-why-it-matters-too)
+
+
+
+

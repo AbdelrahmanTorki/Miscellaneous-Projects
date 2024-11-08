@@ -1,0 +1,12 @@
+ident,name,type,iso_country,gps_code,iata_code,local_code
+KATW,Appleton International Airport,small_airport,US,KATW,ATW,ATW
+KMTH,The Florida Keys Marathon Airport,medium_airport,US,KMTH,MTH,MTH
+KNYL,Yuma MCAS/Yuma International Airport,medium_airport,US,KNYL,YUM,NYL
+KPHF,Newport News Williamsburg International Airport,large_airport,US,KPHF,PHF,PHF
+KRYY,Cobb County-Mc Collum Field,medium_airport,US,KRYY,,RYY
+KSCH,Schenectady County Airport,medium_airport,US,KSCH,SCH,SCH
+MM67,Ingeniero Manuel Moreno Torres  Airport,small_airport,MX,MM67,,MTH
+MX-0664,El Charco Airport,small_airport,MX,,,SCH
+TJCP,Benjamin Rivera Noriega Airport,small_airport,PR,TJCP,CPX,CPX
+W55,Kenmore Air Harbor Seaplane Base,seaplane_base,US,W55,LKE,W55
+X44,Miami Seaplane Base,seaplane_base,US,X44,MPB,X44
